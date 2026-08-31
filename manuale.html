@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuale - FaceMarks</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FaceMarks</h1>
+            <p class="subtitle">Manuale Utente</p>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Panoramica</a>
+            <a href="teoria.html">Teoria</a>
+            <a href="visualizzazione.html">Visualizzazione</a>
+            <a href="manuale.html" class="active">Manuale</a>
+        </nav>
+
+        <main>
+            <section>
+                <h2>Introduzione</h2>
+                <p>
+                    FaceMarks rileva 478 punti facciali 3D su mesh tridimensionali usando un approccio
+                    di raycasting multi-vista. La pipeline proietta la mesh da diverse angolazioni,
+                    rileva i punti 2D con MediaPipe, e aggrega le intersezioni raggio-mesh in
+                    posizioni 3D affidabili.
+                </p>
+                <p>
+                    Questo manuale descrive come utilizzare il visualizzatore 3D per esplorare e
+                    confrontare i risultati ottenuti con diversi metodi di aggregazione.
+                </p>
+            </section>
+
+            <section>
+                <h2>Interfaccia</h2>
+
+                <h3>Modelli</h3>
+                <p>
+                    I bottoni numerati nella barra dei controlli permettono di selezionare il modello
+                    3D da visualizzare. Ogni modello ha i propri file di landmarks associati.
+                </p>
+
+                <h3>Landmarks</h3>
+                <p>
+                    Ogni metodo di aggregazione produce un file JSON contenente le posizioni 3D dei
+                    478 landmarks facciali. I landmarks vengono visualizzati come punti colorati
+                    sulla superficie della mesh.
+                </p>
+                <p>
+                    I diversi metodi disponibili sono:
+                </p>
+                <ul>
+                    <li><strong>Migliore</strong> (blu) &mdash; Selezione hit a minima varianza, il metodo
+                        usato in produzione</li>
+                    <li><strong>Vicino</strong> (verde) &mdash; Metodo del punto pi&ugrave; vicino
+                        (centroide)</li>
+                    <li><strong>Piano</strong> (magenta) &mdash; Metodo del piano tangente</li>
+                    <li><strong>Triangolo</strong> (arancione) &mdash; Media su triangolo pi&ugrave;
+                        colpito</li>
+                    <li><strong>Minimi Quadrati</strong> (ciano) &mdash; Punto pi&ugrave; vicino a tutti i raggi
+                        (minimi quadrati)</li>
+                </ul>
+
+                <h3>Controlli della Camera</h3>
+                <ul>
+                    <li><strong>Rotazione</strong> &mdash; Trascina con il mouse sinistro</li>
+                    <li><strong>Zoom</strong> &mdash; Rotella del mouse</li>
+                    <li><strong>Spostamento</strong> &mdash; Trascina con il mouse destro</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Confronto tra Metodi</h2>
+                <p>
+                    La funzionalit&agrave; principale del visualizzatore &egrave; il confronto tra
+                    diversi metodi di aggregazione. Selezionando pi&ugrave; metodi contemporaneamente,
+                    i punti di ogni metodo vengono sovrapposti sulla stessa mesh, permettendo di
+                    confrontare visivamente le differenze di posizionamento.
+                </p>
+                <p>
+                    Per confrontare due metodi:
+                </p>
+                <ol>
+                    <li>Assicurarsi che solo il primo metodo sia attivo (es. <em>Migliore</em>)</li>
+                    <li>Cliccare sul secondo metodo da confrontare (es. <em>Minimi Quadrati</em>)</li>
+                    <li>La sovrapposizione mostra dove i due metodi divergono</li>
+                </ol>
+                <p>
+                    I punti che si discostano dalla superficie della mesh indicano dove un metodo
+                    produce risultati meno precisi rispetto ad un altro.
+                </p>
+            </section>
+
+        </main>
+    </div>
+</body>
+</html>

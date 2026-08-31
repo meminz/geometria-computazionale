@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizzazione 3D - FaceMarks</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/viewer.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FaceMarks</h1>
+            <p class="subtitle">Visualizzazione 3D di Modelli e Landmarks</p>
+        </header>
+        <nav class="nav">
+            <a href="index.html">Panoramica</a>
+            <a href="teoria.html">Teoria</a>
+            <a href="visualizzazione.html" class="active">Visualizzazione</a>
+            <a href="manuale.html">Manuale</a>
+        </nav>
+    </div>
+
+    <div id="viewer"></div>
+
+    <div class="controls">
+        <div class="model-buttons">
+            <button data-model="1" class="active">1</button>
+            <button data-model="2">2</button>
+        </div>
+        <div class="divider"></div>
+        <div class="landmark-buttons"></div>
+    </div>
+    <div class="loading">Caricamento modello...</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+        import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+
+        const LANDMARK_COLORS = {
+            best:  0x0088ff,
+            closest: 0x00cc44,
+            plane: 0xff00ff,
+            triangle: 0xff8800,
+            lsq: 0x00ffff
+        };
+
+        const LANDMARK_DEFAULTS = { best: true, closest: false, plane: false, triangle: false, lsq: false };
+
+        const LANDMARKS = [
+            { name: 'best',    label: 'Migliore',        file: 'best_landmarks.json' },
+            { name: 'closest', label: 'Vicino',          file: 'closest_landmarks.json' },
+            { name: 'plane',   label: 'Piano',           file: 'plane_landmarks.json' },
+            { name: 'triangle',label: 'Triangolo',       file: 'triangle_landmarks.json' },
+            { name: 'lsq',     label: 'Minimi Quadrati', file: 'lsq_landmarks.json' },
+        ];
+
+        const MODELS = {
+            1: {
+                path: 'assets/modelli/2/',
+                obj: '2.obj', mtl: '2.mtl',
+            },
+            2: {
+                path: 'assets/modelli/M001/',
+                obj: 'M001.obj', mtl: 'M001.mtl',
+            },
+        };
+
+        const viewer = document.getElementById('viewer');
+        const loading = document.querySelector('.loading');
+        const modelButtons = document.querySelectorAll('.model-buttons button');
+        const landmarkContainer = document.querySelector('.landmark-buttons');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+
+        const viewerW = viewer.clientWidth;
+        const viewerH = viewer.clientHeight;
+
+        const camera = new THREE.PerspectiveCamera(50, viewerW / viewerH, 0.001, 10);
+        camera.position.set(0, 0.45, 1);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(viewerW, viewerH);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        viewer.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 0, 0);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(1, 2, 3);
+        scene.add(dirLight);
+
+        const currentGroup = new THREE.Group();
+        scene.add(currentGroup);
+
+        const objLoader = new OBJLoader();
+        const mtlLoader = new MTLLoader();
+
+        let landmarkSets = [];
+
+        function hexToHSL(hex) {
+            const r = ((hex >> 16) & 0xff) / 255;
+            const g = ((hex >> 8) & 0xff) / 255;
+            const b = (hex & 0xff) / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; }
+            else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+                else if (max === g) h = ((b - r) / d + 2) / 6;
+                else h = ((r - g) / d + 4) / 6;
+            }
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        }
+
+        function hslToHex(h, s, l) {
+            s /= 100; l /= 100;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); };
+            return (Math.round(f(0) * 255) << 16) | (Math.round(f(8) * 255) << 8) | Math.round(f(4) * 255);
+        }
+
+        function desaturateColor(hex) {
+            const hsl = hexToHSL(hex);
+            return hslToHex(hsl.h, hsl.s * 0.3, hsl.l);
+        }
+
+        async function parseOBJVertices(url) {
+            const resp = await fetch(url);
+            const text = await resp.text();
+            const vertices = [];
+            for (const line of text.split('\n')) {
+                const parts = line.trim().split(/\s+/);
+                if (parts[0] === 'v' && parts.length >= 4) {
+                    vertices.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
+                }
+            }
+            return vertices;
+        }
+
+        function clearScene() {
+            while (currentGroup.children.length) {
+                const child = currentGroup.children[0];
+                currentGroup.remove(child);
+                child.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) {
+                        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                        else obj.material.dispose();
+                    }
+                });
+            }
+            landmarkSets = [];
+        }
+
+        function renderLandmarkButtons() {
+            landmarkContainer.innerHTML = '';
+            landmarkSets.forEach(set => {
+                const btn = document.createElement('button');
+                btn.className = 'landmark-btn' + (set.visible ? ' active' : '');
+                const color = LANDMARK_COLORS[set.name];
+                const dotColor = set.visible ? color : desaturateColor(color);
+                btn.innerHTML = `<span class="landmark-dot" style="background:#${dotColor.toString(16).padStart(6, '0')}"></span>${set.label}`;
+                btn.addEventListener('click', () => {
+                    set.visible = !set.visible;
+                    set.points.visible = set.visible;
+                    btn.classList.toggle('active', set.visible);
+                    const newColor = set.visible ? color : desaturateColor(color);
+                    btn.querySelector('.landmark-dot').style.background = `#${newColor.toString(16).padStart(6, '0')}`;
+                });
+                landmarkContainer.appendChild(btn);
+            });
+        }
+
+        function showLoading() { loading.style.display = 'block'; }
+        function hideLoading() { loading.style.display = 'none'; }
+
+        async function loadModel(id) {
+            const cfg = MODELS[id];
+            clearScene();
+            showLoading();
+
+            try {
+                if (cfg.mtl) {
+                    const mtl = await new Promise((resolve, reject) => {
+                        mtlLoader.load(cfg.path + cfg.mtl, resolve, undefined, reject);
+                    });
+                    mtl.preload();
+                    objLoader.setMaterials(mtl);
+                } else {
+                    objLoader.setMaterials(null);
+                }
+
+                const obj = await new Promise((resolve, reject) => {
+                    objLoader.load(cfg.path + cfg.obj, resolve, undefined, reject);
+                });
+
+                const box = new THREE.Box3().setFromObject(obj);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+
+                obj.traverse(child => {
+                    if (child.isMesh) {
+                        child.geometry.translate(-center.x, -center.y, -center.z);
+                        child.geometry.scale(1/maxDim, 1/maxDim, 1/maxDim);
+                    }
+                });
+
+                currentGroup.add(obj);
+
+                const rawVertices = await parseOBJVertices(cfg.path + cfg.obj);
+                const vertexPositions = rawVertices.map(v => [
+                    (v[0] - center.x) / maxDim,
+                    (v[1] - center.y) / maxDim,
+                    (v[2] - center.z) / maxDim
+                ]);
+
+                for (const lm of LANDMARKS) {
+                    try {
+                        const resp = await fetch(cfg.path + lm.file);
+                        if (!resp.ok) continue;
+                        const data = await resp.json();
+                        const coords = data['normalized coordinates'];
+                        const vi = data['closest vertex indexes'];
+                        let positions;
+                        if ((lm.name === 'plane' || lm.name === 'triangle') && vi && vi.length > 0) {
+                            positions = vi.map(i => vertexPositions[i]);
+                        } else {
+                            positions = coords;
+                        }
+                        const geometry = new THREE.BufferGeometry();
+                        const posArray = new Float32Array(positions.flat());
+                        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+                        const color = LANDMARK_COLORS[lm.name] ?? 0xffffff;
+                        const material = new THREE.PointsMaterial({ color, size: 0.008, sizeAttenuation: true });
+                        const points = new THREE.Points(geometry, material);
+                        const visible = LANDMARK_DEFAULTS[lm.name] ?? false;
+                        points.visible = visible;
+                        currentGroup.add(points);
+                        landmarkSets.push({ name: lm.name, label: lm.label, points, visible });
+                    } catch (_) {}
+                }
+
+                renderLandmarkButtons();
+            } catch (err) {
+                console.error('Errore caricamento modello:', err);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        modelButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modelButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadModel(btn.dataset.model);
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            const w = viewer.clientWidth;
+            const h = viewer.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+        loadModel(1);
+    </script>
+</body>
+</html>

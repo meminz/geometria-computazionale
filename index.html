@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="data:image/x-icon;base64,">
+    <title>FaceMarks - Rilevamento 3D di Punti Facciali</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FaceMarks</h1>
+            <p class="subtitle">Libreria per il Rilevamento 3D di Punti Facciali</p>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html" class="active">Panoramica</a>
+            <a href="teoria.html">Teoria</a>
+            <a href="visualizzazione.html">Visualizzazione</a>
+            <a href="manuale.html">Manuale</a>
+        </nav>
+
+        <main>
+            <section>
+                <h2>Panoramica</h2>
+                <p>
+                    FaceMarks è una libreria Python per il rilevamento automatico di landmarks facciali su mesh tridimensionali.
+                    Sfrutta tecniche di geometria computazionale e consenso multi-vista per proiettare punti facciali 2D su superfici 3D, fornendo un posizionamento accurato e coerente.
+                </p>
+                <p>
+                    L'ambito di questo progetto si concentra su un problema specifico della pipeline: 
+                    implementare e confrontare diverse strategie per aggregare le intersezioni 
+                    raggio-mesh ottenute da più viste in posizioni 3D affidabili. 
+                </p>
+            </section>
+
+            <section>
+                <h2>Funzionalità</h2>
+                <ul>
+                    <li>Rilevamento di 478 punti facciali su mesh tridimensionali</li>
+                    <li>Raycasting con metodi di aggregazione basati su consenso multi-vista</li>
+                    <li>Supporto per formati mesh standard (OBJ, PLY)</li>
+                    <li>Esportazione JSON per i dati dei punti facciali</li>
+                    <li>Accelerazione basata su tensori tramite Open3D</li>
+                </ul>
+            </section>
+
+            <!-- <section> -->
+            <!--     <h2>Quickstart</h2> -->
+            <!--     <div class="code-block"> -->
+            <!--         <pre><code>uv venv --python 3.11<br>uv pip install facemarks<br>wget https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task</code></pre> -->
+            <!--     </div> -->
+            <!-- </section> -->
+
+            <!-- <section> -->
+            <!--     <h2>Utilizzo</h2> -->
+            <!--     <div class="code-block"> -->
+            <!--         <pre><code>from facemarks import ( -->
+    <!-- import_mesh_and_setup, -->
+    <!-- predict, -->
+    <!-- render_result -->
+<!-- ) -->
+
+<!-- # Caricamento e preparazione della mesh 3D -->
+<!-- meshes = import_mesh_and_setup("mesh.obj") -->
+
+<!-- # Predizione dei punti facciali 3D -->
+<!-- prediction = predict(meshes, projections=20) -->
+
+<!-- # Estrazione dei risultati -->
+<!-- landmarks_3d = prediction["facemarks_3d"] -->
+<!-- vertex_indices = prediction["closest_vertex_ids"] -->
+
+<!-- # Visualizzazione dei risultati -->
+<!-- render_result(meshes["original"], landmarks_3d)</code></pre> -->
+            <!--     </div> -->
+            <!-- </section> -->
+
+            <section>
+                <h2>Pipeline</h2>
+                <ol>
+                    <li><strong>Caricamento mesh</strong> - La mesh 3D viene normalizzata (scala, centroide) e convertita in formato tensore per raycasting accelerato su GPU</li>
+                    <li><strong>Generazione viste</strong> - N (parametro impostabile) angoli di vista randomici vengono generati attorno all'orientamento frontale</li>
+                    <li><strong>Rendering offscreen</strong> - Per ogni vista, la mesh viene poriettata in 2D su un piano immagine</li>
+                    <li><strong>Rilevamento 2D</strong> - MediaPipe Face Landmarker identifica 478 punti facciali in ogni immagine renderizzata</li>
+                    <li><strong>Hidden Point Removal</strong> - I punti occlusi vengono filtrati usando test di visibilità basati su raycasting</li>
+                    <li><strong>Calcolo raggi</strong> - Le direzioni 2D vengono trasformate in raggi 3D usando le matrici intrinseche ed estrinseche della camera</li>
+                    <li><strong>Aggregazione</strong> (<em>ambito del progetto</em>) - I molteplici raggi generati per ogni landmark vengono aggregati in una posizione 3D usando una delle strategie esplorate</li>
+                    <li><strong>Associazione vertici</strong> - La posizione 3D viene mappata al vertice più vicino della mesh</li>
+                </ol>
+
+                <figure>
+                    <img src="assets/img/pipelineOverview.jpg" width="100%">
+                    <figcaption>Overview della pipeline</figcaption>
+                </figure>
+                <br>
+
+                <h2>Risultati</h2>
+                <figure>
+                    <img src="assets/img/results.jpg" width="100%">
+                    <figcaption>Esempio di risultati ottenti</figcaption>
+                </figure>
+            </section>
+
+            <section>
+                <h2>Per Saperne di Più</h2>
+                <ul>
+                    <li><a href="teoria.html">Teoria</a> - Metodi di geometria computazionale usati nel progetto</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentazione - FaceMarks</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        }
+    };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FaceMarks</h1>
+            <p class="subtitle">Riferimento API e Guida all'Uso</p>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Panoramica</a>
+            <a href="teoria.html">Teoria</a>
+            <a href="visualizzazione.html">Visualizzazione</a>
+            <a href="documentazione.html" class="active">Documentazione</a>
+        </nav>
+
+        <main>
+            <section>
+                <h2>Documentazione</h2>
+                <p>
+                    Questa guida copre le API complete della libreria FaceMarks. Per un quickstart, vedi la pagina <a href="index.html">Panoramica</a>.
+                </p>
+            </section>
+
+            <section>
+                <h2>Installazione</h2>
+                <h3>Requisiti</h3>
+                <ul>
+                    <li>Python 3.11</li>
+                    <li>MediaPipe Face Landmarker model (in working directory)</li>
+                    <div class="code-block">
+                        <pre><code>wget https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task</code></pre>
+                    </div>
+                </ul>
+
+                <h3>Da PyPI</h3>
+                <div class="code-block">
+                    <pre><code>uv venv --python 3.11<br>uv pip install facemarks</code></pre>
+                </div>
+
+            </section>
+
+            <section>
+                <h2>API Principali</h2>
+
+                <h3>import_mesh_and_setup</h3>
+                <p class="api-signature"><code>import_mesh_and_setup(mesh_path: str) -> dict</code></p>
+                <p>
+                    Carica una mesh 3D e la prepara per l'elaborazione. Restituisce un dizionario 
+                    contenente la mesh in formati multipli.
+                </p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Tipo</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>mesh_path</code></td>
+                            <td><code>str</code></td>
+                            <td>Percorso del file mesh (OBJ, PLY, ecc.)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><strong>Restituisce:</strong> <code>dict</code> con chiavi:</p>
+                <ul>
+                    <li><code>"original"</code> — Oggetto mesh Open3D standard (per visualizzazione)</li>
+                    <li><code>"textured"</code> — Mesh texturizzata per il rendering</li>
+                    <li><code>"tensor"</code> — Mesh tensore per accelerazione del raycasting</li>
+                </ul>
+
+                <h3>predict</h3>
+                <p class="api-signature"><code>predict(meshes: dict, projections: int = 10) -> dict</code></p>
+                <p>
+                    Esegue l'intera pipeline di rilevamento 3D dei punti facciali su una mesh preparata.
+                </p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Tipo</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>meshes</code></td>
+                            <td><code>dict</code></td>
+                            <td>Output di <code>import_mesh_and_setup()</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>projections</code></td>
+                            <td><code>int</code></td>
+                            <td>Numero di punti di vista per il rendering (predefinito: 10)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><strong>Restituisce:</strong> <code>dict</code> con chiavi:</p>
+                <ul>
+                    <li><code>"facemarks_3d"</code> — Lista di 478 coordinate [x, y, z] dei punti facciali</li>
+                    <li><code>"closest_vertex_ids"</code> — Lista degli indici dei vertici mesh più vicini</li>
+                </ul>
+
+                <h3>render_result</h3>
+                <p class="api-signature"><code>render_result(mesh, landmarks_3d: list) -> None</code></p>
+                <p>
+                    Visualizza la mesh con i punti facciali rilevati usando il visualizzatore Open3D.
+                </p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Tipo</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>mesh</code></td>
+                            <td><code>o3d.geometry.TriangleMesh</code></td>
+                            <td>L'oggetto mesh originale</td>
+                        </tr>
+                        <tr>
+                            <td><code>landmarks_3d</code></td>
+                            <td><code>list</code></td>
+                            <td>Coordinate dei punti facciali dalla predizione</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>save_facemarks_json</h3>
+                <p class="api-signature"><code>save_facemarks_json(prediction: dict, path: str) -> None</code></p>
+                <p>
+                    Esporta i risultati della predizione in un file JSON.
+                </p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Tipo</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>prediction</code></td>
+                            <td><code>dict</code></td>
+                            <td>Output di <code>predict()</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>path</code></td>
+                            <td><code>str</code></td>
+                            <td>Percorso del file di output</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+                <h2>Esempio Completo</h2>
+                <div class="code-block">
+                    <pre><code>
+import sys
+from facemarks import (
+    import_mesh_and_setup,
+    predict,
+    save_facemarks_json,
+    render_result
+)
+
+# Caricamento e preparazione della mesh 3D
+meshes = import_mesh_and_setup(sys.argv[1])
+
+# Predizione dei punti facciali 3D
+prediction = predict(meshes, projections=20)
+
+# Estrazione dei risultati
+facemarks_3d = prediction["facemarks_3d"]
+closest_vertex_ids = prediction["closest_vertex_ids"]
+
+# Visualizzazione dei risultati
+render_result(meshes["original"], facemarks_3d)
+
+# Salvataggio in JSON (opzionale)
+# save_facemarks_json(prediction, "landmarks.json")</code></pre>
+                </div>
+            </section>
+
+            <section>
+                <h2>Interni del Modulo</h2>
+
+                <h3>facemarks.predict</h3>
+                <p>
+                    La funzione <code>predict()</code> orchestra l'intera pipeline:
+                </p>
+                <ol>
+                    <li>Inizializzazione del rilevatore MediaPipe FaceMesh</li>
+                    <li>Creazione del renderer Open3D offscreen</li>
+                    <li>Generazione degli angoli di vista (griglia sistematica attorno all'orientamento frontale)</li>
+                    <li>Per ogni punto di vista: rendering della mesh, rilevamento 2D, calcolo raggi prospettici, trasformazione nello spazio mondo</li>
+                    <li>Aggregazione dei raggi e esecuzione di <code>raycasting()</code> per trovare le posizioni 3D</li>
+                </ol>
+
+                <h3>facemarks.raycast</h3>
+                <p>
+                    Il modulo <code>raycast</code> contiene la logica di intersezione raggio-mesh e le 
+                    strategie di aggregazione (vedi <a href="teoria.html">Teoria</a> per i dettagli):
+                </p>
+                <ul>
+                    <li><code>raycasting()</code> — Punto di ingresso principale; elabora i raggi per punto e restituisce posizioni 3D</li>
+                    <li><code>closest_point_method()</code> — Punto ai minimi quadrati più vicino a tutti i raggi</li>
+                    <li><code>closest_point_hit_method()</code> — Centroide dei punti hit validi</li>
+                    <li><code>tangent_plane_method()</code> — Adattamento piano locale per affinamento</li>
+                    <li><code>plane_raycast()</code> — Intersezione vettorizzata raggio-piano</li>
+                </ul>
+
+                <h3>facemarks._geometry_processing</h3>
+                <p>
+                    Utility interne di geometria:
+                </p>
+                <ul>
+                    <li><code>_hpr_mesh_based()</code> — Hidden Point Removal per stima della visibilità</li>
+                    <li><code>_perspective_rays_directions()</code> — Calcolo direzioni dei raggi da intrinseche camera</li>
+                    <li><code>_hit_coords()</code> — Estrazione coordinate 3D dai risultati raycast</li>
+                </ul>
+
+                <h3>Altri Moduli</h3>
+                <ul>
+                    <li><code>facemarks._mp_utils</code> — Inizializzazione rilevatore MediaPipe e conversione immagini</li>
+                    <li><code>facemarks._triangles</code> — Topologia di triangolazione FaceMesh (478 punti)</li>
+                    <li><code>facemarks.io_utils</code> — Caricamento mesh e I/O JSON</li>
+                    <li><code>facemarks.rendering</code> — Visualizzazione dei risultati</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Formato di Input</h2>
+                <p>
+                    FaceMarks accetta mesh triangolari nei formati supportati da Open3D:
+                </p>
+                <ul>
+                    <li><strong>OBJ</strong> — Wavefront OBJ (con o senza materiali MTL)</li>
+                    <li><strong>PLY</strong> — Stanford PLY</li>
+                    <li><strong>OFF</strong> — Object File Format</li>
+                    <li><strong>STL</strong> — Stereolithography</li>
+                </ul>
+                <p>
+                    La mesh deve rappresentare una geometria facciale. La topologia dei punti segue la 
+                    convenzione MediaPipe FaceMesh (478 punti).
+                </p>
+            </section>
+
+            <section>
+                <h2>Formato di Output</h2>
+                <p>
+                    L'esportazione JSON (<code>save_facemarks_json()</code>) produce un file con 
+                    questa struttura:
+                </p>
+                <div class="code-block">
+                    <pre><code>{
+    "facemarks_3d": [
+        [x0, y0, z0],
+        [x1, y1, z1],
+        ...
+    ],
+    "closest_vertex_ids": [v0, v1, ...]
+}</code></pre>
+                </div>
+                <p>
+                    Le coordinate sono nel sistema di coordinate originale della mesh (nessuna normalizzazione).
+                </p>
+            </section>
+
+            <section>
+                <h2>Risoluzione Problemi</h2>
+                <h3>Nessun hit per il punto X</h3>
+                <p>
+                    I raggi per questo punto non hanno intersecato la mesh da alcun punto di vista. 
+                    Cause comuni:
+                </p>
+                <ul>
+                    <li>Il punto è in una regione occlusa (es. dentro la bocca, dietro il naso)</li>
+                    <li>La mesh ha buchi o geometria incompleta</li>
+                    <li>La configurazione dei punti di vista non copre questa regione</li>
+                </ul>
+
+                <h3>Nessun raggio per il punto X</h3>
+                <p>
+                    Il rilevatore 2D non ha individuato questo punto in alcuna vista. Questo può 
+                    accadere per punti sul bordo del volto o in regioni a basso contrasto.
+                </p>
+
+                <h3>Errore nel rilevamento del volto</h3>
+                <p>
+                    Il rilevatore MediaPipe non ha trovato un volto in un numero sufficiente di viste 
+                    renderizzate. Assicurarsi che la mesh sia centrata e orientata frontalmente.
+                </p>
+
+                <h3>Performance</h3>
+                <p>
+                    Le prestazioni del raycasting dipendono dalla complessità della mesh. Per mesh 
+                    grandi (>100k triangoli), considerare la semplificazione della mesh.
+                </p>
+            </section>
+        </main>
+
+    </div>
+</body>
+</html>
