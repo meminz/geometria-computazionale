@@ -27,6 +27,7 @@
         <div class="model-buttons">
             <button data-model="1" class="active">1</button>
             <button data-model="2">2</button>
+            <button data-model="3">3</button>
         </div>
         <div class="divider"></div>
         <div class="landmark-buttons"></div>
@@ -74,6 +75,11 @@
             2: {
                 path: 'assets/modelli/M001/',
                 obj: 'M001.obj', mtl: 'M001.mtl',
+            },
+            3: {
+                path: 'assets/modelli/01161/',
+                obj: '131116114523.obj', mtl: '131116114523.mtl',
+                rotation: { x: -Math.PI/2, y: -Math.PI/6, z: -Math.PI/5 },
             },
         };
 
@@ -224,14 +230,28 @@
                     }
                 });
 
+                if (cfg.rotation) {
+                    obj.rotation.set(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z);
+                }
+
                 currentGroup.add(obj);
 
                 const rawVertices = await parseOBJVertices(cfg.path + cfg.obj);
-                const vertexPositions = rawVertices.map(v => [
+                let vertexPositions = rawVertices.map(v => [
                     (v[0] - center.x) / maxDim,
                     (v[1] - center.y) / maxDim,
                     (v[2] - center.z) / maxDim
                 ]);
+
+                if (cfg.rotation) {
+                    const rotMatrix = new THREE.Matrix4();
+                    rotMatrix.makeRotationFromEuler(new THREE.Euler(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z));
+                    vertexPositions = vertexPositions.map(v => {
+                        const vec = new THREE.Vector3(v[0], v[1], v[2]);
+                        vec.applyMatrix4(rotMatrix);
+                        return [vec.x, vec.y, vec.z];
+                    });
+                }
 
                 for (const lm of LANDMARKS) {
                     try {
@@ -245,6 +265,15 @@
                             positions = vi.map(i => vertexPositions[i]);
                         } else {
                             positions = coords;
+                        }
+                        if (cfg.rotation) {
+                            const rotMatrix = new THREE.Matrix4();
+                            rotMatrix.makeRotationFromEuler(new THREE.Euler(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z));
+                            positions = positions.map(v => {
+                                const vec = new THREE.Vector3(v[0], v[1], v[2]);
+                                vec.applyMatrix4(rotMatrix);
+                                return [vec.x, vec.y, vec.z];
+                            });
                         }
                         const geometry = new THREE.BufferGeometry();
                         const posArray = new Float32Array(positions.flat());
