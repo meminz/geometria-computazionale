@@ -28,6 +28,7 @@
             <button data-model="1" class="active">1</button>
             <button data-model="2">2</button>
             <button data-model="3">3</button>
+            <button data-model="4">4</button>
         </div>
         <div class="divider"></div>
         <div class="landmark-buttons"></div>
@@ -69,17 +70,21 @@
 
         const MODELS = {
             1: {
-                path: 'assets/modelli/2/',
-                obj: '2.obj', mtl: '2.mtl',
-            },
-            2: {
-                path: 'assets/modelli/M001/',
-                obj: 'M001.obj', mtl: 'M001.mtl',
-            },
-            3: {
                 path: 'assets/modelli/01161/',
                 obj: '131116114523.obj', mtl: '131116114523.mtl',
                 rotation: { x: -Math.PI/2, y: -Math.PI/6, z: -Math.PI/5 },
+            },
+            2: {
+                path: 'assets/modelli/4/',
+                obj: '20250319161641.obj', mtl: '20250319161641.mtl',
+            },
+            3: {
+                path: 'assets/modelli/2/',
+                obj: '2.obj', mtl: '2.mtl',
+            },
+            4: {
+                path: 'assets/modelli/M001/',
+                obj: 'M001.obj', mtl: 'M001.mtl',
             },
         };
 
@@ -225,8 +230,10 @@
 
                 obj.traverse(child => {
                     if (child.isMesh) {
-                        child.geometry.translate(-center.x, -center.y, -center.z);
                         child.geometry.scale(1/maxDim, 1/maxDim, 1/maxDim);
+                        const box = new THREE.Box3().setFromObject(obj);
+                        const center = box.getCenter(new THREE.Vector3());
+                        child.geometry.translate(-center.x, -center.y, -center.z);
                     }
                 });
 
@@ -236,21 +243,40 @@
 
                 currentGroup.add(obj);
 
-                const rawVertices = await parseOBJVertices(cfg.path + cfg.obj);
-                let vertexPositions = rawVertices.map(v => [
-                    (v[0] - center.x) / maxDim,
-                    (v[1] - center.y) / maxDim,
-                    (v[2] - center.z) / maxDim
-                ]);
+                const vertexPositions = [];
+                obj.traverse(child => {
+                    if (child.isMesh) {
+                        const pos = child.geometry.attributes.position;
+                        for (let i = 0; i < pos.count; i++) {
+                            vertexPositions.push([pos.getX(i), pos.getY(i), pos.getZ(i)]);
+                        }
+                    }
+                });
 
+                let rotMatrix = null;
                 if (cfg.rotation) {
-                    const rotMatrix = new THREE.Matrix4();
+                    rotMatrix = new THREE.Matrix4();
                     rotMatrix.makeRotationFromEuler(new THREE.Euler(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z));
-                    vertexPositions = vertexPositions.map(v => {
-                        const vec = new THREE.Vector3(v[0], v[1], v[2]);
-                        vec.applyMatrix4(rotMatrix);
-                        return [vec.x, vec.y, vec.z];
-                    });
+                }
+
+                function applyRotation(v) {
+                    if (!rotMatrix) return v;
+                    const vec = new THREE.Vector3(v[0], v[1], v[2]);
+                    vec.applyMatrix4(rotMatrix);
+                    return [vec.x, vec.y, vec.z];
+                }
+
+                function snapToNearestVertex(coord) {
+                    let bestDist = Infinity;
+                    let best = vertexPositions[0] || [0, 0, 0];
+                    for (const vp of vertexPositions) {
+                        const dx = vp[0] - coord[0];
+                        const dy = vp[1] - coord[1];
+                        const dz = vp[2] - coord[2];
+                        const d = dx * dx + dy * dy + dz * dz;
+                        if (d < bestDist) { bestDist = d; best = vp; }
+                    }
+                    return best;
                 }
 
                 for (const lm of LANDMARKS) {
@@ -259,22 +285,7 @@
                         if (!resp.ok) continue;
                         const data = await resp.json();
                         const coords = data['normalized coordinates'];
-                        const vi = data['closest vertex indexes'];
-                        let positions;
-                        if ((lm.name === 'plane' || lm.name === 'triangle') && vi && vi.length > 0) {
-                            positions = vi.map(i => vertexPositions[i]);
-                        } else {
-                            positions = coords;
-                        }
-                        if (cfg.rotation) {
-                            const rotMatrix = new THREE.Matrix4();
-                            rotMatrix.makeRotationFromEuler(new THREE.Euler(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z));
-                            positions = positions.map(v => {
-                                const vec = new THREE.Vector3(v[0], v[1], v[2]);
-                                vec.applyMatrix4(rotMatrix);
-                                return [vec.x, vec.y, vec.z];
-                            });
-                        }
+                        const positions = coords.map(v => applyRotation(v));
                         const geometry = new THREE.BufferGeometry();
                         const posArray = new Float32Array(positions.flat());
                         geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
@@ -285,7 +296,7 @@
                         points.visible = visible;
                         currentGroup.add(points);
                         landmarkSets.push({ name: lm.name, label: lm.label, points, visible });
-                    } catch (_) {}
+                    } catch (e) { console.error(`Errore landmark ${lm.name}:`, e); }
                 }
 
                 renderLandmarkButtons();
