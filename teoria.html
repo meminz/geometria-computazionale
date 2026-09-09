@@ -104,7 +104,7 @@
                 <p>
                     Per ogni punto 2D visibile, la direzione del raggio è calcolata nello spazio camera
                     usando la matrice intrinseca. Dato un punto alle coordinate pixel $(u, v)$, si ha
-                    $\mathbf{d}_{\text{cam}} = K^{-1} [u,\; v,\; 1]^\top$, dove $K$ è la matrice
+                    $\mathbf{d}_{\text{camera}} = K^{-1} [u,\; v,\; 1]^\top$, dove $K$ è la matrice
                     intrinseca. Questo dà la direzione del raggio dal centro della camera attraverso
                     il pixel sul piano immagine.
                 </p>
@@ -113,7 +113,7 @@
                 <p>
                     Le direzioni dei raggi nello spazio camera vengono trasformate nello spazio mondo
                     usando la matrice di rotazione della camera per il punto di vista corrente:
-                    $\mathbf{d}_{\text{world}} = \mathbf{d}_{\text{cam}} \, R^{-1}$. L'origine del
+                    $\mathbf{d}_{\text{world}} = \mathbf{d}_{\text{camera}} \, R^{-1}$. L'origine del
                     raggio è la posizione della camera in coordinate mondo, estratta dalla matrice
                     estrinseca. Ogni raggio è memorizzato come vettore a 6 elementi
                     $[\text{orig}_x, \text{orig}_y, \text{orig}_z, \text{dir}_x, \text{dir}_y, \text{dir}_z]$.
