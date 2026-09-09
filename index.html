@@ -23,6 +23,15 @@
 
         <main>
             <section>
+                <h2>Informazioni</h2>
+                <ul>
+                    <li><strong>Autore:</strong> Samuele Bertinelli</li>
+                    <li><strong>Corso:</strong> Geometria Computazionale</li>
+                    <li><strong>Anno Accademico:</strong> 2025/2026</li>
+                </ul>
+            </section>
+
+            <section>
                 <h2>Panoramica</h2>
                 <p>
                     FaceMarks è una libreria Python per il rilevamento automatico di landmarks facciali su mesh tridimensionali.
@@ -34,48 +43,6 @@
                     raggio-mesh ottenute da più viste in posizioni 3D affidabili. 
                 </p>
             </section>
-
-            <!-- <section> -->
-            <!--     <h2>Funzionalità</h2> -->
-            <!--     <ul> -->
-            <!--         <li>Rilevamento di 478 punti facciali su mesh tridimensionali</li> -->
-            <!--         <li>Raycasting con metodi di aggregazione basati su consenso multi-vista</li> -->
-            <!--         <li>Supporto per formati mesh standard (OBJ, PLY)</li> -->
-            <!--         <li>Esportazione JSON per i dati dei punti facciali</li> -->
-            <!--         <li>Accelerazione basata su tensori tramite Open3D</li> -->
-            <!--     </ul> -->
-            <!-- </section> -->
-
-            <!-- <section> -->
-            <!--     <h2>Quickstart</h2> -->
-            <!--     <div class="code-block"> -->
-            <!--         <pre><code>uv venv --python 3.11<br>uv pip install facemarks<br>wget https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task</code></pre> -->
-            <!--     </div> -->
-            <!-- </section> -->
-
-            <!-- <section> -->
-            <!--     <h2>Utilizzo</h2> -->
-            <!--     <div class="code-block"> -->
-            <!--         <pre><code>from facemarks import ( -->
-    <!-- import_mesh_and_setup, -->
-    <!-- predict, -->
-    <!-- render_result -->
-<!-- ) -->
-
-<!-- # Caricamento e preparazione della mesh 3D -->
-<!-- meshes = import_mesh_and_setup("mesh.obj") -->
-
-<!-- # Predizione dei punti facciali 3D -->
-<!-- prediction = predict(meshes, projections=20) -->
-
-<!-- # Estrazione dei risultati -->
-<!-- landmarks_3d = prediction["facemarks_3d"] -->
-<!-- vertex_indices = prediction["closest_vertex_ids"] -->
-
-<!-- # Visualizzazione dei risultati -->
-<!-- render_result(meshes["original"], landmarks_3d)</code></pre> -->
-            <!--     </div> -->
-            <!-- </section> -->
 
             <section>
                 <h2>Pipeline</h2>
